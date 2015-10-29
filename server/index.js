@@ -1,8 +1,17 @@
 var express = require('express');
 var app = express();
+var cookieParser = require('cookie-parser');
+var session = require('express-session')
+app.use(cookieParser());
+app.use(session({
+    secret: '34SDgsdgspxxxxxxxdfsG', // just a long random string
+    resave: false,
+    saveUninitialized: true
+}));
 
 app.get('/', function (req, res) {
-  res.send('List of commands:');
+ // res.send('List of commands:');
+  res.send('Your session: ' + req.sessionID);
 });
 
 
