@@ -1,3 +1,4 @@
+create database argus;
 use argus;
 
 CREATE TABLE houses (
