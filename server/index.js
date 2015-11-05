@@ -4,7 +4,11 @@ var app 			= express();
 var cookieParser 	= require('cookie-parser');
 var session 		= require('express-session');
 var crud 			= require('./crud.js');
+//Load bd config
+var db_config 		= require('./db_config.json');
 
+//Set multiple statements
+db_config.multipleStatements = true;
 
 app.use(cookieParser());
 app.use(session({
@@ -14,20 +18,21 @@ app.use(session({
 }));
 
 function connect() {
-	var connection = mysql.createConnection({
-		host     : 'localhost',
-		user     : 'root',
-		password : 'root',
-		database : 'argus',
-		multipleStatements: true
-	});
-
+	var connection = mysql.createConnection(db_config);
 	connection.connect();
 	return connection;
 }
 
 function disconnect(connection) {
 	connection.end();
+}
+
+function identified_user(req, callback) {
+	if (req.cookies.user_id !== undefined
+		&& req.cookies.house_id !== undefined)
+		callback();
+	else
+		callback(Error('user not identified. Please login'));
 }
 
 
@@ -43,7 +48,7 @@ var RASP_TIMEOUT = 40; //in seconds
 
 app.get('/alarm_switch', function (req, res) {
 	var timestamp = Math.floor(Date.now()/1000);
-	console.log("[alarm_switch] Processing request at");
+	console.log("[alarm_switch] Processing request...");
 	var house_id = req.query.house_id;
 	var active = req.query.active;
 	//verify if parameters are valid
@@ -62,7 +67,8 @@ app.get('/alarm_switch', function (req, res) {
 		})
 	}
 
-})/
+});
+
 app.get('/sensor_update', function (req, res) {
 	var timestamp = Math.floor(Date.now()/1000);
 	console.log("[sensor_update] Processing request at " + timestamp);
@@ -108,6 +114,66 @@ app.get('/sensor_update', function (req, res) {
 			});
 		});
 	}
+});
+
+app.get('/login', function (req, res) {
+	console.log("[login] Processing request");
+	var user = req.query.user;
+	var password = req.query.password;
+	
+	//verify if parameters are valid
+	if (user == undefined) 
+		res.status(500).send("error: Missing 'user' argument");
+	else if (password == undefined) 
+		res.status(500).send("error: Missing 'password' argument");
+	else {
+		var conn = connect();
+		crud.get_user_id_and_house_id(conn, user, password, function (err, user_id, house_id) {
+			if (err) {
+				res.status(500).send('error: ' + err.message);
+				console.log('[login] error ' + err.message);
+				req.cookies.user_id = undefined;
+				req.cookies.house_id = undefined;
+				disconnect(conn);
+				return;
+			}
+			console.log('[login] User ' + user + " logged!");
+			res.cookie('user_id', user_id);
+			res.cookie('house_id', house_id);
+			res.send("user logged");
+			disconnect(conn);
+		});
+	}
+});
+
+app.get('/update_info', function (req, res) {
+	console.log("[update_info] Processing request");
+	identified_user(req, function (err) {
+		if (err) {
+			res.status(500).send('error: ' + err.message);
+			return;
+		}
+		var conn = connect();
+		crud.get_events(conn, req.cookies.house_id, 0, function (err, events) {
+			if (err) {
+				req.status(500).send('error: ' + err.message);
+				disconnect(conn);
+				return;
+			}
+			crud.is_alarm_on(conn, req.cookies.house_id, function (err, active) {
+				if (err) {
+					req.status(500).send('error: ' + err.message);
+					disconnect(conn);
+					return;
+				}	
+				disconnect(conn);
+				res.json({ 
+					alarm_status: active,
+					events: events 
+				});		
+			});
+		});
+	});
 });
 
 

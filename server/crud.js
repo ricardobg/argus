@@ -30,6 +30,48 @@ function get_sensor_id(connection, house_id, sensor_id, callback) {
     });
 }
 
+function get_user_id_and_house_id(connection, user, password, callback) {
+	connection.query('SELECT * FROM users WHERE user=? and pass=?', [user, password], function(err, rows) { 
+        if (err) {
+			callback(err);
+			return;
+        }
+		if (rows.length == 0) {
+			callback(Error("user/password invalid"));
+			return;
+		}
+		callback(null, rows[0].id, rows[0].house_id);
+    });
+}
+
+function get_events(connection, house_id, timestamp, callback) {
+	connection.query('SELECT e.id, UNIX_TIMESTAMP(e.instant) as instant, e.type, i.type as identification_type, i.panic, a.active, s.sensor_id, s.open  \
+		FROM events e left join identifications_log i on i.event_id=e.id left join alarms_log a on a.event_id=e.id left join \
+		sensors_change_log s on s.event_id=e.id where e.house_id=? and e.instant>=? ORDER BY e.instant ASC',
+		[ house_id, timestamp], function (err, rows) {
+		if (err) {
+			callback(err);
+			return;
+		}
+		console.log('[get_events] Loaded ' + rows.length + ' events');
+		var events = [];
+		for (var i = 0; i < rows.length; i++) {
+			var event = {};
+			event.id = rows[i].id;
+			event.timestamp = rows[i].instant;
+			event.type = rows[i].type;
+			if (event.type == EVENTS.Snap.value) {
+				event.snap = {
+					link: 'https://s-media-cache-ak0.pinimg.com/736x/5e/96/56/5e96564b62d9a68f8331db9b3eb6bd1c.jpg'
+				}
+			}
+			events.push(event);
+
+		}
+		callback(null, events);
+	});
+}
+
 function is_alarm_on(connection, house_id, callback) {
 	house_exists(connection, house_id, function (err) {
 		if (err) {
@@ -90,6 +132,8 @@ function set_alarm(connection, house_id, active, source, callback) {
 
 exports.is_alarm_on = is_alarm_on;
 exports.set_alarm = set_alarm;
+exports.get_user_id_and_house_id = get_user_id_and_house_id;
+exports.get_events = get_events;
 
 //Function to call when there is sensor timeout
 exports.sensor_timeout = function (connection, house_id, initial_time, callback) {	
