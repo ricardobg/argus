@@ -5,7 +5,7 @@ android {
     buildToolsVersion "23.0.2"
 
     defaultConfig {
-        applicationId "br.com.argus"
+        applicationId "br.com.argus.argus"
         minSdkVersion 15
         targetSdkVersion 22
         versionCode 1
