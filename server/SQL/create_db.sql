@@ -62,3 +62,11 @@ CREATE TABLE alarms_log (
     FOREIGN KEY (device_id) REFERENCES devices(id),
     FOREIGN KEY (event_id) REFERENCES events(id)
 );
+
+CREATE TABLE pictures_log
+(
+     event_id BIGINT NOT NULL PRIMARY KEY,
+     picture BLOB NOT NULL,   
+     FOREIGN KEY (event_id) REFERENCES events(id)
+);
+
