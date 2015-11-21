@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -21,8 +22,11 @@ import java.net.URL;
 
 public class LoginActivity extends AppCompatActivity {
 
+    User user;
+    UserLocalStore userLS;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        userLS = new UserLocalStore(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
@@ -35,7 +39,8 @@ public class LoginActivity extends AppCompatActivity {
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                login(usernameText.getText().toString(),passwordText.getText().toString());
+                user = new User(usernameText.getText().toString(), passwordText.getText().toString(), 1, 1);
+                login(user);
             }
         });
 
@@ -45,14 +50,12 @@ public class LoginActivity extends AppCompatActivity {
 
 
 
-    public void login(String username, String password) {
-
+    public void login(User user) {
         URL url;
         HttpURLConnection urlConnection = null;
         String message="";
         try {
-
-            url = new URL("https://argus-adrianodennanni.c9.io/login?user="+username+"&password="+password);
+            url = new URL("https://argus-adrianodennanni.c9.io/login?user="+user.username+"&password="+user.password);
 
 
             urlConnection = (HttpURLConnection) url
@@ -80,11 +83,17 @@ public class LoginActivity extends AppCompatActivity {
             }
         }
 
-
-
         AlertDialog alertDialog = new AlertDialog.Builder(LoginActivity.this).create();
         alertDialog.setTitle("Server Response");
-        alertDialog.setMessage(message);
+        if(message != "")
+        {
+            alertDialog.setMessage("Login OK");
+            userLS.setUserLoggedIn(true);
+            userLS.storeUserData(user);
+            startActivity(new Intent(this, AlarmsActivity.class));
+        }
+        else
+            alertDialog.setMessage("Falha Login");
         alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {

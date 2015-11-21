@@ -65,5 +65,11 @@
                 android:text="Alarme 3"
                 android:textSize="30dp" />
         </FrameLayout>
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:text="Logout"
+            android:id="@+id/logoutButton" />
     </LinearLayout>
 </RelativeLayout>
