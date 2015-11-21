@@ -11,6 +11,15 @@ var db_config 		= require('./db_config.json');
 db_config.multipleStatements = true;
 
 app.use(cookieParser());
+
+
+var bodyParser = require('body-parser')
+app.use( bodyParser.json({limit: '50mb'}) );       // to support JSON-encoded bodies
+app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
+	limit: '50mb',
+  	extended: true
+})); 
+
 app.use(session({
     secret: '34SDgsdgspxxxxxxxdfsG', // just a long random string
     resave: false,
@@ -28,8 +37,7 @@ function disconnect(connection) {
 }
 
 function identified_user(req, callback) {
-	if (req.cookies.user_id !== undefined
-		&& req.cookies.house_id !== undefined)
+	if (req.cookies.user_id !== undefined && req.cookies.house_id !== undefined)
 		callback();
 	else
 		callback(Error('user not identified. Please login'));
@@ -53,20 +61,19 @@ app.get('/alarm_switch', function (req, res) {
 	var active = req.query.active;
 	//verify if parameters are valid
 	if (house_id == undefined) 
-		res.status(500).send("error: Missing 'house_id' argument");
+		res.status(500).json({ "error": "Missing 'house_id' argument" });
 	else if (active == undefined) 
-		res.status(500).send("error: Missing 'active' argument");
+		res.status(500).json({ "error": "Missing 'active' argument" });
 	else {
 		var conn = connect();
 		crud.set_alarm(conn, house_id, active, null, function (err, id) {
 			if (err)
-				res.status(500).send('error: ' + err.message);
+				res.status(500).json({"error": err.message});
 			else
-				res.send('alarm change (' + (active>0 ? 'activated' : 'deactivated') + ') saved (id=' + id + ')');
+				res.json({"result": "'alarm change (' + (active>0 ? 'activated' : 'deactivated') + ') saved (id=' + id + ')'"});
 			disconnect(conn);
 		})
 	}
-
 });
 
 app.get('/sensor_update', function (req, res) {
@@ -77,16 +84,16 @@ app.get('/sensor_update', function (req, res) {
 	var open = req.query.open;
 	//verify if parameters are valid
 	if (house_id == undefined) 
-		res.status(500).send("error: Missing 'house_id' argument");
+		res.status(500).json({ "error": "Missing 'house_id' argument" });
 	else if (sensor_id == undefined) 
-		res.status(500).send("error: Missing 'sensor_id' argument");
+		res.status(500).json({ "error": "Missing 'sensor_id' argument" });
 	else if (open == undefined)
-		res.status(500).send("error: Missing 'open' argument");
+		res.status(500).json({ "error": "Missing 'open' argument" });
 	else {
 		var conn = connect();
 		crud.is_alarm_on(conn, house_id, function (err, active) {
 			if (!active) {
-				res.send('Sensor change not saved because alarm is not active');
+				res.json({"warning": "'Sensor change not saved because alarm is not active'", "result": "no event created"});
 				disconnect(conn);
 				return;
 			}
@@ -107,14 +114,64 @@ app.get('/sensor_update', function (req, res) {
 			//Save entry
 			crud.create_sensor_log(conn, house_id, sensor_id, open, timestamp, function (err, id) {
 				if (err)
-					res.status(500).send('error: ' + err.message);
+					res.status(500).json({"error": err.message});
 				else
-					res.send('Sensor change saved (id=' + id + ')');
+					res.json({"result": "Sensor change saved (id=' + id + ')'"});
 				disconnect(conn);
 			});
 		});
 	}
 });
+
+
+app.post('/send_snap', function (req, res) {
+	console.log("[send_snap] Processing request...");
+	var house_id = req.body.house_id;
+	var timestamp = req.body.timestamp;
+	var image = req.body.image;
+	//verify if parameters are valid
+	if (house_id == undefined) 
+		res.status(500).json({ "error": "Missing 'house_id' argument" });
+	else if (timestamp == undefined) 
+		res.status(500).json({ "error": "Missing 'timestamp' argument" });
+	else if (image == undefined) 
+		res.status(500).json({ "error": "Missing 'image' argument" });
+	else {
+		var conn = connect();
+		var image_buf = new Buffer(image, 'base64');
+		crud.save_snap(conn, house_id, timestamp, image_buf, function (err, id) {
+			if (err)
+				res.status(500).json({"error": err.message});
+			else
+				res.status(500).json({"result": "snap saved (id=" + id + ")"});
+			disconnect(conn);
+		})
+	}
+});
+
+app.get('/get_snap', function (req, res) {
+	console.log("[get_snap] Processing request...");
+	var house_id = req.query.house_id;
+	var event_id = req.query.event_id;
+	//verify if parameters are valid
+	if (house_id == undefined) 
+		res.status(500).json({ "error": "Missing 'house_id' argument" });
+	else if (event_id == undefined) 
+		res.status(500).json({ "error": "Missing 'event_id' argument" });
+	else {
+		var conn = connect();
+		crud.get_snap(conn, event_id, function (err, image) {
+			if (err)
+				res.status(500).json({"error": err.message});
+			else {
+				res.header('Content-Type', 'image/jpeg');
+				res.end(image);
+			}
+			disconnect(conn);
+		})
+	}
+});
+
 
 app.get('/login', function (req, res) {
 	console.log("[login] Processing request");
@@ -123,14 +180,14 @@ app.get('/login', function (req, res) {
 	
 	//verify if parameters are valid
 	if (user == undefined) 
-		res.status(500).send("error: Missing 'user' argument");
+		res.status(500).json({ "error": "Missing 'user' argument" });
 	else if (password == undefined) 
-		res.status(500).send("error: Missing 'password' argument");
+		res.status(500).json({ "error": "Missing 'password' argument" });
 	else {
 		var conn = connect();
 		crud.get_user_id_and_house_id(conn, user, password, function (err, user_id, house_id) {
 			if (err) {
-				res.status(500).send('error: ' + err.message);
+				res.status(500).json({"error": err.message });
 				console.log('[login] error ' + err.message);
 				req.cookies.user_id = undefined;
 				req.cookies.house_id = undefined;
@@ -140,7 +197,7 @@ app.get('/login', function (req, res) {
 			console.log('[login] User ' + user + " logged!");
 			res.cookie('user_id', user_id);
 			res.cookie('house_id', house_id);
-			res.send("user logged");
+			res.json({"result": "user logged"});
 			disconnect(conn);
 		});
 	}
@@ -150,19 +207,19 @@ app.get('/update_info', function (req, res) {
 	console.log("[update_info] Processing request");
 	identified_user(req, function (err) {
 		if (err) {
-			res.status(500).send('error: ' + err.message);
+			res.status(500).send({"error": err.message});
 			return;
 		}
 		var conn = connect();
-		crud.get_events(conn, req.cookies.house_id, 0, function (err, events) {
+		crud.get_events(conn, req.cookies.house_id, 0, req.protocol + '://' + req.get('host') + '/', function (err, events) {
 			if (err) {
-				req.status(500).send('error: ' + err.message);
+				res.status(500).send({"error": err.message});
 				disconnect(conn);
 				return;
 			}
 			crud.is_alarm_on(conn, req.cookies.house_id, function (err, active) {
 				if (err) {
-					req.status(500).send('error: ' + err.message);
+					res.status(500).send({"error": err.message});
 					disconnect(conn);
 					return;
 				}	
@@ -175,7 +232,6 @@ app.get('/update_info', function (req, res) {
 		});
 	});
 });
-
 
 var server = app.listen(8080, function () {
   var host = server.address().address;

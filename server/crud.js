@@ -44,7 +44,7 @@ function get_user_id_and_house_id(connection, user, password, callback) {
     });
 }
 
-function get_events(connection, house_id, timestamp, callback) {
+function get_events(connection, house_id, timestamp, base_url, callback) {
 	connection.query('SELECT e.id, UNIX_TIMESTAMP(e.instant) as instant, e.type, i.type as identification_type, i.panic, a.active, s.sensor_id, s.open  \
 		FROM events e left join identifications_log i on i.event_id=e.id left join alarms_log a on a.event_id=e.id left join \
 		sensors_change_log s on s.event_id=e.id where e.house_id=? and e.instant>=? ORDER BY e.instant ASC',
@@ -62,7 +62,7 @@ function get_events(connection, house_id, timestamp, callback) {
 			event.type = rows[i].type;
 			if (event.type == EVENTS.Snap.value) {
 				event.snap = {
-					link: 'https://s-media-cache-ak0.pinimg.com/736x/5e/96/56/5e96564b62d9a68f8331db9b3eb6bd1c.jpg'
+					link:  base_url + 'get_snap?house_id=' + house_id + '&event_id=' + event.id
 				}
 			}
 			events.push(event);
@@ -130,6 +130,46 @@ function set_alarm(connection, house_id, active, source, callback) {
 	});
 }
 
+
+function save_snap(connection, house_id, timestamp, image, callback) {
+	house_exists(connection, house_id, function (err) {
+		if (err) {
+			callback(err);
+			return;
+			}
+		create_event(connection, house_id, EVENTS.Snap, timestamp, function (err, id) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			connection.query('INSERT INTO pictures_log (event_id, picture) VALUES (?,?); SELECT LAST_INSERT_ID() as id;',
+				[ id, image ], function (err, rows) {
+				if (err) {
+					callback(err);
+					return;
+				}
+				callback(null, rows[1][0].id);
+			});
+		});
+	});
+}
+
+function get_snap(connection, event_id, callback) {
+	connection.query('SELECT * FROM pictures_log WHERE event_id=?', [event_id], function(err, rows) { 
+        if (err) {
+			callback(err);
+			return;
+        }
+		if (rows.length == 0) {
+			callback(Error("snap with id=" + event_id + " not found"));
+			return;
+		}
+		callback(null, rows[0].picture);
+    });
+}
+
+exports.get_snap = get_snap;
+exports.save_snap = save_snap;
 exports.is_alarm_on = is_alarm_on;
 exports.set_alarm = set_alarm;
 exports.get_user_id_and_house_id = get_user_id_and_house_id;
