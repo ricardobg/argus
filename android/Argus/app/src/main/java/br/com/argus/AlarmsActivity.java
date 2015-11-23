@@ -1,12 +1,8 @@
 package br.com.argus;
 
-import android.content.Intent;
-import android.os.StrictMode;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 
@@ -16,15 +12,14 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 
-public class AlarmsActivity extends AppCompatActivity {
-
+public class AlarmsActivity extends BaseActivity {
     User user;
     UserLocalStore userLS;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        userLS = new UserLocalStore(this);
-        user = userLS.getLoggedInUser();
+
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alarms);
 
@@ -34,15 +29,11 @@ public class AlarmsActivity extends AppCompatActivity {
         Switch switch1 = (Switch) findViewById(R.id.switch1);
         Switch switch2 = (Switch) findViewById(R.id.switch2);
         Switch switch3 = (Switch) findViewById(R.id.switch3);
-        Button logoutButton = (Button) findViewById(R.id.logoutButton);
-        final Intent swtLogin = new Intent(this, LoginActivity.class);
-        logoutButton.setOnClickListener(new View.OnClickListener(){
-            public void onClick(View v) {
-                userLS.clearUserData();
-                userLS.setUserLoggedIn(false);
-                startActivity(swtLogin);
-            }
-                                        });
+
+        userLS = new UserLocalStore(this);
+        user = userLS.getLoggedInUser();
+
+
         switch1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 
             @Override

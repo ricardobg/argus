@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" tools:context="br.com.argus.BaseActivity">
+
+    <item android:id="@+id/action_alarms"
+        android:title="@string/Alarms"
+        android:orderInCategory="100"
+        android:icon="@drawable/ic_alarm"
+        app:showAsAction="ifRoom"
+        android:onClick="loadAlarmsActivity"/>
+
+    <item android:id="@+id/action_logout"
+        android:title="@string/Logout"
+        android:orderInCategory="200"
+        android:icon="@drawable/ic_logout"
+        app:showAsAction="ifRoom"
+        android:onClick="logout"/>
+</menu>

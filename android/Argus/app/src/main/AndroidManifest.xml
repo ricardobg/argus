@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="br.com.argus" >
+    package="br.com.argus">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -14,7 +14,7 @@
         android:icon="@mipmap/security_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme">
         <activity
             android:name=".AlarmsActivity"
             android:label="@string/alarms_activity_label" />
@@ -23,13 +23,17 @@
             android:label="@string/title_activity_label" />
         <activity
             android:name=".StartActivity"
-            android:label="@string/title_activity_start" >
+            android:label="@string/title_activity_start">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".BaseActivity"
+            android:label="@string/title_activity_base"
+            android:theme="@style/AppTheme"></activity>
     </application>
 
 </manifest>
