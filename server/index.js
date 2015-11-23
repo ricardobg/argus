@@ -116,7 +116,7 @@ app.get('/sensor_update', function (req, res) {
 				if (err)
 					res.status(500).json({"error": err.message});
 				else
-					res.json({"result": "Sensor change saved (id=' + id + ')'"});
+					res.json({"result": "Sensor change saved (id=" + id + ")"});
 				disconnect(conn);
 			});
 		});
@@ -124,28 +124,44 @@ app.get('/sensor_update', function (req, res) {
 });
 
 
+
+
+
 app.post('/send_snap', function (req, res) {
-	console.log("[send_snap] Processing request...");
+	var timestamp = Math.floor(Date.now()/1000);
+	console.log("[send_snap] Processing request at " + timestamp);
 	var house_id = req.body.house_id;
-	var timestamp = req.body.timestamp;
 	var image = req.body.image;
 	//verify if parameters are valid
 	if (house_id == undefined) 
 		res.status(500).json({ "error": "Missing 'house_id' argument" });
-	else if (timestamp == undefined) 
-		res.status(500).json({ "error": "Missing 'timestamp' argument" });
 	else if (image == undefined) 
 		res.status(500).json({ "error": "Missing 'image' argument" });
 	else {
-		var conn = connect();
 		var image_buf = new Buffer(image, 'base64');
-		crud.save_snap(conn, house_id, timestamp, image_buf, function (err, id) {
-			if (err)
-				res.status(500).json({"error": err.message});
-			else
-				res.status(500).json({"result": "snap saved (id=" + id + ")"});
-			disconnect(conn);
-		})
+		setTimeout(function () {
+				console.log("[send_snap] timeout (" + SENSOR_TIMEOUT + "s)");
+				var connection = connect();
+				crud.is_house_in_dangerous(connection, house_id, timestamp, function (err, danger) {
+					if (err) {
+						console.log('[send_snap] ' + err.message);
+						disconnect(connection);
+					}
+					else if (danger) {
+						//Save snap
+						crud.save_snap(connection, house_id, Math.floor(Date.now()/1000), image_buf, function (err, event_id) {
+							console.log('[send_snap] Created SNAP event (id=' + event_id + ')');
+							disconnect(connection);
+						});
+					}
+					else {
+						console.log('[send_snap] Snap won\'t be saved');
+						disconnect(connection);
+					}
+					
+				});
+		}, SENSOR_TIMEOUT * 1000 + 10);
+		res.status(500).json({"result": "snap received"});
 	}
 });
 

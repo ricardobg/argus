@@ -47,7 +47,7 @@ function get_user_id_and_house_id(connection, user, password, callback) {
 function get_events(connection, house_id, timestamp, base_url, callback) {
 	connection.query('SELECT e.id, UNIX_TIMESTAMP(e.instant) as instant, e.type, i.type as identification_type, i.panic, a.active, s.sensor_id, s.open  \
 		FROM events e left join identifications_log i on i.event_id=e.id left join alarms_log a on a.event_id=e.id left join \
-		sensors_change_log s on s.event_id=e.id where e.house_id=? and e.instant>=? ORDER BY e.instant ASC',
+		sensors_change_log s on s.event_id=e.id where e.house_id=? and e.instant>=FROM_UNIXTIME(?) ORDER BY e.instant ASC',
 		[ house_id, timestamp], function (err, rows) {
 		if (err) {
 			callback(err);
@@ -94,6 +94,35 @@ function is_alarm_on(connection, house_id, callback) {
 	});
 }
 
+function is_house_in_dangerous(connection, house_id, timestamp, callback) {
+	house_exists(connection, house_id, function (err) {
+		if (err) {
+			callback(err);
+			return;
+		}
+		connection.query('SELECT instant, type FROM events left join alarms_log on alarms_log.event_id=events.id WHERE (active=0 or active is null) and house_id=? and instant>=FROM_UNIXTIME(?) and type in (?,?,?,?) order by instant ASC', 
+			[house_id, timestamp, EVENTS.AlarmChange.value, EVENTS.Ident.value, EVENTS.IdentPanic.value, EVENTS.Invasion.value], 
+			function(err, rows) { 
+	        if (err) {
+				callback(err);
+				return;
+	        }
+			if (rows.length == 0) {
+				//Strange behvavior!
+				console.log("[WARNING] Unexpected behavior. Can't know if house is in dangerous or not. Assuming it's in dangerous");
+				callback(null, true);
+				return;
+			}
+			console.log(rows);
+			if (rows[0].type == EVENTS.Invasion.value) {
+				callback(null, true);
+				return;
+			}
+			callback(null, false);
+	    });
+	});
+}
+
 
 function create_event(connection, house_id, type, timestamp, callback) {
 	connection.query('INSERT INTO events (instant, type, house_id) VALUES (FROM_UNIXTIME(?),?,?); SELECT LAST_INSERT_ID() as id;',
@@ -136,7 +165,7 @@ function save_snap(connection, house_id, timestamp, image, callback) {
 		if (err) {
 			callback(err);
 			return;
-			}
+		}
 		create_event(connection, house_id, EVENTS.Snap, timestamp, function (err, id) {
 			if (err) {
 				callback(err);
@@ -168,6 +197,8 @@ function get_snap(connection, event_id, callback) {
     });
 }
 
+
+exports.is_house_in_dangerous = is_house_in_dangerous;
 exports.get_snap = get_snap;
 exports.save_snap = save_snap;
 exports.is_alarm_on = is_alarm_on;
