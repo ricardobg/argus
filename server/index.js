@@ -124,9 +124,6 @@ app.get('/sensor_update', function (req, res) {
 });
 
 
-
-
-
 app.post('/send_snap', function (req, res) {
 	var timestamp = Math.floor(Date.now()/1000);
 	console.log("[send_snap] Processing request at " + timestamp);
@@ -221,13 +218,16 @@ app.get('/login', function (req, res) {
 
 app.get('/update_info', function (req, res) {
 	console.log("[update_info] Processing request");
+	var timestamp = req.query.timestamp; 
+	if (timestamp == undefined)
+		timestamp = -1;
 	identified_user(req, function (err) {
 		if (err) {
 			res.status(500).send({"error": err.message});
 			return;
 		}
 		var conn = connect();
-		crud.get_events(conn, req.cookies.house_id, 0, req.protocol + '://' + req.get('host') + '/', function (err, events) {
+		crud.get_events(conn, req.cookies.house_id, parseInt(timestamp)+1, req.protocol + '://' + req.get('host') + '/', function (err, events) {
 			if (err) {
 				res.status(500).send({"error": err.message});
 				disconnect(conn);
