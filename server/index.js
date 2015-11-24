@@ -70,9 +70,59 @@ app.get('/alarm_switch', function (req, res) {
 			if (err)
 				res.status(500).json({"error": err.message});
 			else
-				res.json({"result": "'alarm change (' + (active>0 ? 'activated' : 'deactivated') + ') saved (id=' + id + ')'"});
+				res.json({"result": "alarm change (" + (active>0 ? "activated" : "deactivated") + ") saved (id=" + id + ")"});
 			disconnect(conn);
 		})
+	}
+});
+
+app.get('/identification', function (req, res) {
+	var timestamp = Math.floor(Date.now()/1000);
+	console.log("[identification] Processing request at " + timestamp);
+	var house_id = req.query.house_id;
+	var panic = req.query.panic;
+	if (panic == undefined) 
+		panic = 0;
+	//verify if parameters are valid
+	if (house_id == undefined) 
+		res.status(500).json({ "error": "Missing 'house_id' argument" });
+	else {
+		var conn = connect();
+		crud.is_alarm_on(conn, house_id, function (err, active) {
+			if (err) {
+				res.status(500).json({"error": err.message});
+				disconnect(conn);
+				return;
+			}
+			else if (!active) {
+				res.json({"warning": "identification not saved because alarm is not active", "result": "no event created"});
+				disconnect(conn);
+				return;
+			}
+			else {
+				crud.is_house_waiting_identification(conn, house_id, timestamp - SENSOR_TIMEOUT, function (err, waiting) {
+					if (err) {
+						res.status(500).json({"error": err.message});
+						disconnect(conn);
+						return;
+					}
+					else if (!waiting) {
+						res.json({"warning": "identification not saved because house is not waiting identification", "result": "no event created"});
+						disconnect(conn);
+						return;
+					}
+					else {
+						crud.create_identification_log(conn, house_id, 0, parseInt(panic), timestamp, function (err, id) {
+							if (err)
+								res.status(500).json({"error": err.message});
+							else
+								res.json({"result": "identification (" + (parseInt(panic) != 0 ? "panic" : "regular") + ") saved (id=" + id + ")"});
+							disconnect(conn);
+						});
+					}
+				});
+			}
+		});
 	}
 });
 
@@ -92,8 +142,13 @@ app.get('/sensor_update', function (req, res) {
 	else {
 		var conn = connect();
 		crud.is_alarm_on(conn, house_id, function (err, active) {
-			if (!active) {
-				res.json({"warning": "'Sensor change not saved because alarm is not active'", "result": "no event created"});
+			if (err) {
+				res.status(500).json({"error": err.message});
+				disconnect(conn);
+				return;
+			}
+			else if (!active) {
+				res.json({"warning": "Sensor change not saved because alarm is not active", "result": "no event created"});
 				disconnect(conn);
 				return;
 			}
@@ -110,7 +165,7 @@ app.get('/sensor_update', function (req, res) {
 					disconnect(connection);
 				});
 			}, SENSOR_TIMEOUT * 1000);
-
+			
 			//Save entry
 			crud.create_sensor_log(conn, house_id, sensor_id, open, timestamp, function (err, id) {
 				if (err)
@@ -136,29 +191,39 @@ app.post('/send_snap', function (req, res) {
 		res.status(500).json({ "error": "Missing 'image' argument" });
 	else {
 		var image_buf = new Buffer(image, 'base64');
-		setTimeout(function () {
-				console.log("[send_snap] timeout (" + SENSOR_TIMEOUT + "s)");
-				var connection = connect();
-				crud.is_house_in_dangerous(connection, house_id, timestamp, function (err, danger) {
-					if (err) {
-						console.log('[send_snap] ' + err.message);
-						disconnect(connection);
-					}
-					else if (danger) {
-						//Save snap
-						crud.save_snap(connection, house_id, Math.floor(Date.now()/1000), image_buf, function (err, event_id) {
-							console.log('[send_snap] Created SNAP event (id=' + event_id + ')');
+		var conn = connect();
+		crud.is_alarm_on(conn, house_id, function (err, active) {
+			if (err)
+				res.status(500).json({"error": err.message});
+			else if (active) {
+				res.json({"result": "snap received"});
+				setTimeout(function () {
+					console.log("[send_snap] timeout (" + SENSOR_TIMEOUT + "s)");
+					var connection = connect();
+					crud.is_house_in_dangerous(connection, house_id, timestamp, function (err, danger) {
+						if (err) {
+							console.log('[send_snap] ' + err.message);
 							disconnect(connection);
-						});
-					}
-					else {
-						console.log('[send_snap] Snap won\'t be saved');
-						disconnect(connection);
-					}
-					
-				});
-		}, SENSOR_TIMEOUT * 1000 + 10);
-		res.status(500).json({"result": "snap received"});
+						}
+						else if (danger) {
+							//Save snap
+							crud.save_snap(connection, house_id, Math.floor(Date.now()/1000), image_buf, function (err, event_id) {
+								console.log('[send_snap] Created SNAP event (id=' + event_id + ')');
+								disconnect(connection);
+							});
+						}
+						else {
+							console.log('[send_snap] Snap won\'t be saved');
+							disconnect(connection);
+						}
+						
+					});
+				}, SENSOR_TIMEOUT * 1000 + 10);
+			}
+			else 
+				res.json({"warning": "Snap won't be saved because alarm is not active", "result": "no snap created"});
+			disconnect(conn);
+		});
 	}
 });
 
@@ -184,6 +249,7 @@ app.get('/get_snap', function (req, res) {
 		})
 	}
 });
+
 
 
 app.get('/login', function (req, res) {

@@ -1,5 +1,5 @@
 var Enum 	= require('enum');
-var EVENTS 	= new Enum(['Invasion', 'Offline', 'IdentPanic', 'Ident', 'DoorChange', 'AlarmChange', 'Snap']);
+var EVENTS 	= new Enum(['Invasion', 'Offline', 'IdentPanic', 'Ident', 'DoorChange', 'AlarmChange', 'Snap', 'Safe']);
 
 
 function house_exists(connection, house_id, callback) {
@@ -86,7 +86,7 @@ function is_alarm_on(connection, house_id, callback) {
 	        }
 			if (rows.length == 0) {
 				//alarm not activated by default
-				callback(null, false );
+				callback(null, false);
 				return;
 			}
 			callback(null, rows[0].active);
@@ -113,12 +113,43 @@ function is_house_in_dangerous(connection, house_id, timestamp, callback) {
 				callback(null, true);
 				return;
 			}
-			console.log(rows);
-			if (rows[0].type == EVENTS.Invasion.value) {
+			if (rows[0].type == EVENTS.Invasion.value || ows[0].type == EVENTS.IdentPanic.value) {
 				callback(null, true);
 				return;
 			}
 			callback(null, false);
+	    });
+	});
+}
+
+function is_house_waiting_identification(connection, house_id, since, callback) {
+	house_exists(connection, house_id, function (err) {
+		if (err) {
+			callback(err);
+			return;
+		}
+		if (since < 0)
+			since = 0;
+		connection.query('SELECT instant, type FROM events left join sensors_change_log on sensors_change_log.event_id=events.id left join alarms_log on alarms_log.event_id=events.id WHERE (open=1 or open is null) and (active=0 or active is null) and house_id=? and instant>=FROM_UNIXTIME(?) and type in (?,?,?,?,?) order by instant DESC', 
+			[house_id, since, EVENTS.DoorChange.value, EVENTS.AlarmChange.value, EVENTS.Ident.value, EVENTS.IdentPanic.value, EVENTS.Invasion.value], 
+			function(err, rows) { 
+	        if (err) {
+				callback(err);
+				return;
+	        }
+			if (rows.length == 0) {
+				//Not waiting
+				callback(null, false);
+				return;
+			}
+			var door_changes = 0;
+			for (var i = 0; i < rows.length; i++) {
+				if (rows[i].type == EVENTS.DoorChange.value) 
+					door_changes++;
+				else
+					door_changes--;
+			}
+			callback(null, door_changes > 0);
 	    });
 	});
 }
@@ -198,6 +229,7 @@ function get_snap(connection, event_id, callback) {
 }
 
 
+exports.is_house_waiting_identification = is_house_waiting_identification;
 exports.is_house_in_dangerous = is_house_in_dangerous;
 exports.get_snap = get_snap;
 exports.save_snap = save_snap;
@@ -208,8 +240,8 @@ exports.get_events = get_events;
 
 //Function to call when there is sensor timeout
 exports.sensor_timeout = function (connection, house_id, initial_time, callback) {	
-	connection.query('SELECT instant,type FROM events LEFT JOIN alarms_log on alarms_log.event_id=events.id WHERE house_id=? and type in(?,?) and (active is null or active=0) and instant>=FROM_UNIXTIME(?) order by instant DESC', 
-		[house_id, EVENTS.AlarmChange.value, EVENTS.Ident.value, initial_time], function(err, rows) { 
+	connection.query('SELECT instant,type FROM events LEFT JOIN alarms_log on alarms_log.event_id=events.id WHERE house_id=? and type in(?,?,?) and (active is null or active=0) and instant>=FROM_UNIXTIME(?) order by instant DESC', 
+		[house_id, EVENTS.AlarmChange.value, EVENTS.Ident.value, EVENTS.IdentPanic.value, initial_time], function(err, rows) { 
         if (err) {
 			callback(err);
 			return;
@@ -264,3 +296,36 @@ exports.create_sensor_log = function (connection, house_id, sensor_id, open, tim
 		});
 	});
 }
+
+exports.create_identification_log = function (connection, house_id, type, panic, timestamp, callback) {
+	//verify if house exists
+	house_exists(connection, house_id, function (err) {
+		if (err) {
+			callback(err);
+			return;
+		}
+		//verify if sensor exists
+		if (err) {
+			callback(err);
+			return;
+		}
+		//create event
+		create_event(connection, house_id,  panic ? EVENTS.IdentPanic : EVENTS.Ident, timestamp, function (err, event_id) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			//create identifications change log
+			connection.query('INSERT INTO identifications_log (event_id, type, panic) VALUES (?,?,?); SELECT LAST_INSERT_ID() as id;', 
+				[ event_id, type, panic ], function (err, rows) {
+				if (err) {
+					callback(err);
+					return;
+				}
+				var log_id = rows[1][0].id;
+				console.log('[create_identification_log] Created create_identification_log (id=' + log_id + ')');
+				callback(null, log_id);
+			});
+		});
+	});
+} 
