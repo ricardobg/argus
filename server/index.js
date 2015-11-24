@@ -51,7 +51,7 @@ app.get('/', function (req, res) {
 
 
 var SENSOR_TIMEOUT = 5; //in seconds
-var RASP_TIMEOUT = 40; //in seconds
+var RASP_TIMEOUT = 5; //in seconds
 
 
 app.get('/alarm_switch', function (req, res) {
@@ -249,6 +249,60 @@ app.get('/get_snap', function (req, res) {
 		})
 	}
 });
+
+app.get('/keep_alive', function (req, res) {
+	var timestamp = Math.floor(Date.now()/1000);
+	console.log("[keep_alive] Processing request at " + timestamp);
+	var house_id = req.query.house_id;
+	if (house_id == undefined) 
+		res.status(500).json({ "error": "Missing 'house_id' argument" });
+	else {
+		var conn = connect();
+		crud.create_online_event(conn, house_id, true, timestamp, function (err, online_id) {
+			if (err)
+				res.status(500).json({"error": err.message});
+			else {
+				res.json({"result": "created online event at " + timestamp + " (id=" + online_id + ")"});
+				//set timeout
+				setTimeout(function() {
+					var timestamp = Math.floor(Date.now()/1000);
+					var connection = connect();
+					console.log("[keep_alive] timeout at " + timestamp);
+					crud.is_online(connection, house_id, function (err, online, id) {
+						if (err) {
+							console.log("[keep_alive] error: " + err.message);
+							disconnect(connection);
+						}
+						else if (online && online_id == id) {
+							crud.create_online_event(connection, house_id, false, timestamp, function (err, offline_id) {
+								if (err)
+									console.log("[keep_alive] error: " + err.message);
+								else 
+									console.log("[keep_alive] created offline event (id=" + offline_id + ")");
+								disconnect(connection);
+							});
+
+						}
+						else if (online) {
+							console.log("[keep_alive] Other keep_alive received (id=" + id + ")");
+							disconnect(connection);
+						}
+						else {
+							console.log("[keep_alive] Unexpected behavior. Not online before timeout. Ignoring...");
+							disconnect(connection);
+						}
+
+
+						
+					});
+				}, RASP_TIMEOUT * 1000);
+			}
+			disconnect(conn);
+		});
+		
+	}
+});
+
 
 
 

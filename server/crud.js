@@ -1,5 +1,5 @@
 var Enum 	= require('enum');
-var EVENTS 	= new Enum(['Invasion', 'Offline', 'IdentPanic', 'Ident', 'DoorChange', 'AlarmChange', 'Snap', 'Safe']);
+var EVENTS 	= new Enum(['Invasion', 'Offline', 'IdentPanic', 'Ident', 'DoorChange', 'AlarmChange', 'Snap', 'Online']);
 
 
 function house_exists(connection, house_id, callback) {
@@ -53,22 +53,42 @@ function get_events(connection, house_id, timestamp, base_url, callback) {
 			callback(err);
 			return;
 		}
-		console.log('[get_events] Loaded ' + rows.length + ' events');
-		var events = [];
-		for (var i = 0; i < rows.length; i++) {
-			var event = {};
-			event.id = rows[i].id;
-			event.timestamp = rows[i].instant;
-			event.type = rows[i].type;
-			if (event.type == EVENTS.Snap.value) {
-				event.snap = {
-					link:  base_url + 'get_snap?house_id=' + house_id + '&event_id=' + event.id
-				}
+		//get last online/offline event before the timestamp
+		connection.query('SELECT e.type as type from events e where e.type in (?,?) and e.house_id=? and e.instant<FROM_UNIXTIME(?) ORDER BY e.instant DESC',
+		[ EVENTS.Online.value, EVENTS.Offline.value, house_id, timestamp], function (err, online_rows) {
+			if (err) {
+				callback(err);
+				return;
 			}
-			events.push(event);
+			console.log('[get_events] Loaded ' + rows.length + ' events');
 
-		}
-		callback(null, events);
+			var events = [];
+			var last_online = null;
+			if (online_rows.length > 0)
+				last_online = online_rows[0].type;
+			for (var i = 0; i < rows.length; i++) {
+				//Skip repeated online events
+				if (rows[i].type == last_online)
+					continue;
+				else if (rows[i].type == EVENTS.Offline.value || rows[i].type == EVENTS.Online.value) {
+					last_online = last_online == EVENTS.Offline.value ? EVENTS.Online.value : EVENTS.Offline.value;
+				}
+				var event = {};
+				event.id = rows[i].id;
+				event.timestamp = rows[i].instant;
+				event.type = rows[i].type;
+				if (event.type == EVENTS.Snap.value) {
+					event.snap = {
+						link:  base_url + 'get_snap?house_id=' + house_id + '&event_id=' + event.id
+					}
+				}
+				events.push(event);
+
+			}
+			callback(null, events);
+
+
+		});
 	});
 }
 
@@ -90,6 +110,28 @@ function is_alarm_on(connection, house_id, callback) {
 				return;
 			}
 			callback(null, rows[0].active);
+	    });
+	});
+}
+
+function is_online(connection, house_id, callback) {
+	house_exists(connection, house_id, function (err) {
+		if (err) {
+			callback(err);
+			return;
+		}
+		connection.query('SELECT type, id FROM events WHERE house_id=? and type in(?,?) order by instant DESC', [house_id, EVENTS.Offline.value, EVENTS.Online.value], 
+			function(err, rows) { 
+	        if (err) {
+				callback(err);
+				return;
+	        }
+			if (rows.length == 0) {
+				//alarm not aonline by default
+				callback(null, false);
+				return;
+			}
+			callback(null, rows[0].type == EVENTS.Online.value, rows[0].id);
 	    });
 	});
 }
@@ -229,6 +271,7 @@ function get_snap(connection, event_id, callback) {
 }
 
 
+exports.is_online = is_online;
 exports.is_house_waiting_identification = is_house_waiting_identification;
 exports.is_house_in_dangerous = is_house_in_dangerous;
 exports.get_snap = get_snap;
@@ -326,6 +369,25 @@ exports.create_identification_log = function (connection, house_id, type, panic,
 				console.log('[create_identification_log] Created create_identification_log (id=' + log_id + ')');
 				callback(null, log_id);
 			});
+		});
+	});
+} 
+
+
+exports.create_online_event = function (connection, house_id, online, timestamp, callback) {
+	//verify if house exists
+	house_exists(connection, house_id, function (err) {
+		if (err) {
+			callback(err);
+			return;
+		}
+		//create event
+		create_event(connection, house_id,  online ? EVENTS.Online : EVENTS.Offline, timestamp, function (err, event_id) {
+			if (err) {
+				callback(err);
+				return;
+			}
+			callback(null, event_id);
 		});
 	});
 } 
