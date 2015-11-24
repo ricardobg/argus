@@ -51,7 +51,7 @@ app.get('/', function (req, res) {
 
 
 var SENSOR_TIMEOUT = 5; //in seconds
-var RASP_TIMEOUT = 5; //in seconds
+var RASP_TIMEOUT = 30; //in seconds
 
 
 app.get('/alarm_switch', function (req, res) {
