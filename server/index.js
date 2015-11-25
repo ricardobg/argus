@@ -191,6 +191,7 @@ app.post('/send_snap', function (req, res) {
 		res.status(500).json({ "error": "Missing 'image' argument" });
 	else {
 		var image_buf = new Buffer(image, 'base64');
+		console.log("[send_snap] Image size=" + image.length);
 		var conn = connect();
 		crud.is_alarm_on(conn, house_id, function (err, active) {
 			if (err)

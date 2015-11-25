@@ -151,11 +151,17 @@ function is_house_in_dangerous(connection, house_id, timestamp, callback) {
 	        }
 			if (rows.length == 0) {
 				//Strange behvavior!
-				console.log("[WARNING] Unexpected behavior. Can't know if house is in dangerous or not. Assuming it's in dangerous");
-				callback(null, true);
+				console.log("[WARNING] Unexpected behavior. Can't know if house is in dangerous or not.");
+				is_alarm_on(connection, house_id, function (err, alarm_on) {
+					if (err) {
+						callback(err);
+						return
+					}
+					callback(null, alarm_on);	
+				});
 				return;
 			}
-			if (rows[0].type == EVENTS.Invasion.value || ows[0].type == EVENTS.IdentPanic.value) {
+			if (rows[0].type == EVENTS.Invasion.value || rows[0].type == EVENTS.IdentPanic.value) {
 				callback(null, true);
 				return;
 			}
