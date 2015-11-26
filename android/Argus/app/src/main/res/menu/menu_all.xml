@@ -1,18 +1,31 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools" tools:context="br.com.argus.BaseActivity">
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="br.com.argus.BaseActivity">
 
-    <item android:id="@+id/action_alarms"
-        android:title="@string/Alarms"
-        android:orderInCategory="100"
+    <item
+        android:id="@+id/action_alarms"
         android:icon="@drawable/ic_alarm"
-        app:showAsAction="ifRoom"
-        android:onClick="loadAlarmsActivity"/>
+        android:onClick="loadAlarmsActivity"
+        android:orderInCategory="100"
+        android:title="@string/Alarms"
+        app:showAsAction="ifRoom" />
 
-    <item android:id="@+id/action_logout"
-        android:title="@string/Logout"
+    <item
+        android:id="@+id/action_recent_events"
+        android:icon="@drawable/ic_recent_event"
+        android:onClick="loadRecentEventsActivity"
         android:orderInCategory="200"
+        android:title="@string/RecentEvents"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_logout"
         android:icon="@drawable/ic_logout"
-        app:showAsAction="ifRoom"
-        android:onClick="logout"/>
+        android:onClick="logout"
+        android:orderInCategory="300"
+        android:title="@string/Logout"
+        app:showAsAction="ifRoom" />
+
+
 </menu>
