@@ -2,6 +2,16 @@ package br.com.argus;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
+
+import java.net.HttpURLConnection;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 public class UserLocalStore {
     public static final String SP_Name = "userDetails";
     SharedPreferences userLocalDB;
@@ -40,5 +50,28 @@ public class UserLocalStore {
     public boolean isLoggedIn() {
         boolean loggedIn = userLocalDB.getBoolean("loggedIn", false);
         return loggedIn;
+    }
+    public void storeUserSessionCookies(HttpURLConnection urlConnection){
+        Map<String, List<String>> headerFields = urlConnection.getHeaderFields();
+        Set<String> headerFieldsSet = headerFields.keySet();
+        Set<String> cookiesSet = null;
+        Iterator<String> hearerFieldsIter = headerFieldsSet.iterator();
+        while (hearerFieldsIter.hasNext()) {
+            String headerFieldKey = hearerFieldsIter.next();
+            if ("set-cookie".equalsIgnoreCase(headerFieldKey)) {
+                List<String> headerFieldValue = headerFields.get(headerFieldKey);
+                 cookiesSet = new HashSet<>(headerFieldValue);
+            }
+        }
+        SharedPreferences.Editor spEditor = userLocalDB.edit();
+        spEditor.putStringSet("CookiesSet", cookiesSet);
+        spEditor.commit();
+    }
+
+    public List<String> retrieveUserSessionCookies()
+    {
+        Set<String> cookiesSet = userLocalDB.getStringSet("CookiesSet", null);
+        List<String> cookiesList = new ArrayList<>(cookiesSet);
+        return cookiesList;
     }
 }

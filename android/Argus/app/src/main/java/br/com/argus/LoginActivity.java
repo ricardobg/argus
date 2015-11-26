@@ -6,8 +6,10 @@ import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.StrictMode;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,6 +21,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -29,7 +38,6 @@ public class LoginActivity extends AppCompatActivity {
         userLS = new UserLocalStore(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
@@ -56,13 +64,10 @@ public class LoginActivity extends AppCompatActivity {
         String message="";
         try {
             url = new URL("https://argus-adrianodennanni.c9.io/login?user="+user.username+"&password="+user.password);
-
-
-            urlConnection = (HttpURLConnection) url
-                    .openConnection();
-
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.connect();
+            userLS.storeUserSessionCookies(urlConnection);
             InputStream in = urlConnection.getInputStream();
-
             InputStreamReader isw = new InputStreamReader(in);
 
 
