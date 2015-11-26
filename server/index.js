@@ -50,7 +50,7 @@ app.get('/', function (req, res) {
 });
 
 
-var SENSOR_TIMEOUT = 5; //in seconds
+var SENSOR_TIMEOUT = 15; //in seconds
 var RASP_TIMEOUT = 30; //in seconds
 
 
@@ -152,20 +152,21 @@ app.get('/sensor_update', function (req, res) {
 				disconnect(conn);
 				return;
 			}
-			setTimeout(function () {
-				console.log("[sensor_update] timeout (" + SENSOR_TIMEOUT + "s)");
-				var connection = connect();
-				crud.sensor_timeout(connection, house_id, timestamp, function (err, id) {
-					if (err)
-						console.log('[sensor_timeout] ' + err.message);
-					else if (id)
-						console.log('[sensor_timeout] Created INVASION event (id=' + id + ')');
-					else
-						console.log('[sensor_timeout] Nothing to be done!');
-					disconnect(connection);
-				});
-			}, SENSOR_TIMEOUT * 1000);
-			
+			if (parseInt(open) == 1) {
+				setTimeout(function () {
+					console.log("[sensor_update] timeout (" + SENSOR_TIMEOUT + "s)");
+					var connection = connect();
+					crud.sensor_timeout(connection, house_id, timestamp, function (err, id) {
+						if (err)
+							console.log('[sensor_timeout] ' + err.message);
+						else if (id)
+							console.log('[sensor_timeout] Created INVASION event (id=' + id + ')');
+						else
+							console.log('[sensor_timeout] Nothing to be done!');
+						disconnect(connection);
+					});
+				}, SENSOR_TIMEOUT * 1000);
+			}
 			//Save entry
 			crud.create_sensor_log(conn, house_id, sensor_id, open, timestamp, function (err, id) {
 				if (err)

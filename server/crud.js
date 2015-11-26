@@ -45,16 +45,16 @@ function get_user_id_and_house_id(connection, user, password, callback) {
 }
 
 function get_events(connection, house_id, timestamp, base_url, callback) {
-	connection.query('SELECT e.id, UNIX_TIMESTAMP(e.instant) as instant, e.type, i.type as identification_type, i.panic, a.active, s.sensor_id, s.open  \
+	connection.query('SELECT e.id, UNIX_TIMESTAMP(e.instant) as instant, e.type, i.type as identification_type, i.panic, a.active, s.sensor_id, s.open as open  \
 		FROM events e left join identifications_log i on i.event_id=e.id left join alarms_log a on a.event_id=e.id left join \
-		sensors_change_log s on s.event_id=e.id where e.house_id=? and e.instant>=FROM_UNIXTIME(?) ORDER BY e.instant ASC',
+		sensors_change_log s on s.event_id=e.id where e.house_id=? and e.instant>=FROM_UNIXTIME(?) ORDER BY e.instant ASC, e.id ASC',
 		[ house_id, timestamp], function (err, rows) {
 		if (err) {
 			callback(err);
 			return;
 		}
 		//get last online/offline event before the timestamp
-		connection.query('SELECT e.type as type from events e where e.type in (?,?) and e.house_id=? and e.instant<FROM_UNIXTIME(?) ORDER BY e.instant DESC',
+		connection.query('SELECT e.type as type from events e where e.type in (?,?) and e.house_id=? and e.instant<FROM_UNIXTIME(?) ORDER BY e.instant DESC, e.id DESC',
 		[ EVENTS.Online.value, EVENTS.Offline.value, house_id, timestamp], function (err, online_rows) {
 			if (err) {
 				callback(err);
@@ -68,10 +68,12 @@ function get_events(connection, house_id, timestamp, base_url, callback) {
 				last_online = online_rows[0].type;
 			for (var i = 0; i < rows.length; i++) {
 				//Skip repeated online events
-				if (rows[i].type == last_online)
+				if (rows[i].type == last_online){
 					continue;
+				}
+					
 				else if (rows[i].type == EVENTS.Offline.value || rows[i].type == EVENTS.Online.value) {
-					last_online = last_online == EVENTS.Offline.value ? EVENTS.Online.value : EVENTS.Offline.value;
+					last_online = rows[i].type
 				}
 				var event = {};
 				event.id = rows[i].id;
@@ -81,6 +83,11 @@ function get_events(connection, house_id, timestamp, base_url, callback) {
 					event.snap = {
 						link:  base_url + 'get_snap?house_id=' + house_id + '&event_id=' + event.id
 					}
+				}
+				else if (event.type == EVENTS.DoorChange.value) {
+					event.sensor = {
+						open: rows[i].open
+					};
 				}
 				events.push(event);
 
