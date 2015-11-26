@@ -77,7 +77,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/imageView"
-        android:src="@drawable/Argus"
+        android:src="@drawable/logoargus"
         android:layout_below="@+id/textView3"
         android:layout_centerHorizontal="true" />
 
