@@ -7,7 +7,8 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="br.com.argus.LoginActivity">
+    tools:context="br.com.argus.LoginActivity"
+    android:background="#eeece2">
 
     <TextView
         android:layout_width="wrap_content"
@@ -15,20 +16,19 @@
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="@string/Username"
         android:id="@+id/textView"
-        android:layout_alignParentTop="true"
-        android:layout_alignLeft="@+id/usernameText"
-        android:layout_alignStart="@+id/usernameText" />
+        android:layout_above="@+id/usernameText"
+        android:layout_centerHorizontal="true" />
 
     <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/usernameText"
-        android:layout_below="@+id/textView"
+        android:inputType="text"
+        android:layout_above="@+id/textView2"
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:inputType="text" />
+        android:layout_alignParentStart="true" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -36,10 +36,9 @@
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="@string/Password"
         android:id="@+id/textView2"
-        android:layout_below="@+id/usernameText"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_marginTop="36dp" />
+        android:layout_above="@+id/passwordText"
+        android:layout_alignRight="@+id/textView"
+        android:layout_alignEnd="@+id/textView" />
 
     <EditText
         android:layout_width="wrap_content"
@@ -47,7 +46,7 @@
         android:inputType="textPassword"
         android:ems="10"
         android:id="@+id/passwordText"
-        android:layout_below="@+id/textView2"
+        android:layout_above="@+id/loginButton"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_alignRight="@+id/usernameText"
@@ -58,8 +57,28 @@
         android:layout_height="wrap_content"
         android:text="@string/Login"
         android:id="@+id/loginButton"
-        android:layout_below="@+id/passwordText"
+        android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:layout_marginTop="24dp" />
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="ARGUS"
+        android:id="@+id/textView3"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:textSize="55sp" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView"
+        android:src="@drawable/Argus"
+        android:layout_below="@+id/textView3"
+        android:layout_centerHorizontal="true" />
+
 </RelativeLayout>
