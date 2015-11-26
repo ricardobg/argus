@@ -22,6 +22,9 @@
             android:name=".LoginActivity"
             android:label="@string/title_activity_label" />
         <activity
+            android:name=".RecentEventsActivity"
+            android:label="@string/recent_events_label" />
+        <activity
             android:name=".StartActivity"
             android:label="@string/title_activity_start">
             <intent-filter>
@@ -33,7 +36,7 @@
         <activity
             android:name=".BaseActivity"
             android:label="@string/title_activity_base"
-            android:theme="@style/AppTheme"></activity>
+            android:theme="@style/AppTheme"/>
     </application>
 
 </manifest>

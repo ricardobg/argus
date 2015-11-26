@@ -26,5 +26,7 @@
     <string name="menu">Menu</string>
     <string name="Logout">Logout</string>
     <string name="Alarms">Alarms</string>
+    <string name="RecentEvents">Recent Events</string>
+    <string name="recent_events_label">Recent Events</string>
 
 </resources>
