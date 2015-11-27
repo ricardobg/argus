@@ -3,8 +3,10 @@ package br.com.argus;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -18,6 +20,7 @@ import java.net.URL;
 
 public class StartActivity extends AppCompatActivity {
 
+    User user;
     UserLocalStore userLS;
     MyApp mApp = MyApp.getInstance();
     @Override
@@ -28,11 +31,18 @@ public class StartActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
         if(userLS.isLoggedIn()){
 
-            login(userLS.getLoggedInUser());
+            user = userLS.getLoggedInUser();
+            Log.d("Testando", user.username);
+            Log.d("Testando", user.password);
+            login(user);
             mApp.setCookieStore(cookieManager.getCookieStore());
-            startActivity(new Intent(this, AlarmsActivity.class));
+            user.setInfo(cookieManager.getCookieStore());
+            userLS.setUserLoggedIn(true);
+            userLS.storeUserData(user);
             finish();
         }
         else{
@@ -41,7 +51,10 @@ public class StartActivity extends AppCompatActivity {
         }
 
     }
+    @Override
+    protected void onResume(){
 
+    }
     public void login(User user) {
         URL url;
         HttpURLConnection urlConnection = null;
@@ -73,8 +86,6 @@ public class StartActivity extends AppCompatActivity {
         }
         if(message != "")
         {
-            userLS.setUserLoggedIn(true);
-            userLS.storeUserData(user);
             startActivity(new Intent(this, AlarmsActivity.class));
         }
         else{
@@ -83,8 +94,7 @@ public class StartActivity extends AppCompatActivity {
             alertDialog.setMessage("Falha Login");
             alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
                     new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
+                        public void onClick(DialogInterface dialog, int which) {dialog.dismiss();
                         }
                     });
             alertDialog.show();

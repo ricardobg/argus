@@ -42,9 +42,12 @@ public class LoginActivity extends AppCompatActivity {
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                user = new User(usernameText.getText().toString(), passwordText.getText().toString(), 1, 1);
+                user = new User(usernameText.getText().toString(), passwordText.getText().toString());
                 login(user);
                 mApp.setCookieStore(cookieManager.getCookieStore());
+                user.setInfo(cookieManager.getCookieStore());
+                userLS.setUserLoggedIn(true);
+                userLS.storeUserData(user);
             }
         });
 
@@ -85,8 +88,6 @@ public class LoginActivity extends AppCompatActivity {
         }
         if(message != "")
         {
-            userLS.setUserLoggedIn(true);
-            userLS.storeUserData(user);
             startActivity(new Intent(this, AlarmsActivity.class));
         }
         else{

@@ -23,16 +23,16 @@ public class UserLocalStore {
         SharedPreferences.Editor spEditor = userLocalDB.edit();
         spEditor.putString("username", user.username);
         spEditor.putString("password", user.password);
-        spEditor.putInt("session", user.session);
+        spEditor.putInt("userid", user.userid);
         spEditor.putInt("houseid", user.houseid);
         spEditor.commit();
     }
     public User getLoggedInUser(){
         String username = userLocalDB.getString("username", "");
         String password = userLocalDB.getString("password", "");
-        int session = userLocalDB.getInt("session", -1);
+        int userid = userLocalDB.getInt("userid", -1);
         int houseid = userLocalDB.getInt("houseid", -1);
-        User storedUser = new User(username,password,session,houseid);
+        User storedUser = new User(username,password, userid, houseid);
         return storedUser;
     }
     public void setUserLoggedIn(boolean loggedIn) {
