@@ -1,22 +1,22 @@
 package br.com.argus;
 
 import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -24,12 +24,15 @@ public class LoginActivity extends AppCompatActivity {
 
     User user;
     UserLocalStore userLS;
+    MyApp mApp = MyApp.getInstance();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         userLS = new UserLocalStore(this);
+        final CookieManager cookieManager = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
+        CookieHandler.setDefault(cookieManager);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
@@ -39,8 +42,12 @@ public class LoginActivity extends AppCompatActivity {
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                user = new User(usernameText.getText().toString(), passwordText.getText().toString(), 1, 1);
+                user = new User(usernameText.getText().toString(), passwordText.getText().toString());
                 login(user);
+                mApp.setCookieStore(cookieManager.getCookieStore());
+                user.setInfo(cookieManager.getCookieStore());
+                userLS.setUserLoggedIn(true);
+                userLS.storeUserData(user);
             }
         });
 
@@ -56,13 +63,10 @@ public class LoginActivity extends AppCompatActivity {
         String message="";
         try {
             url = new URL("https://argus-adrianodennanni.c9.io/login?user="+user.username+"&password="+user.password);
-
-
-            urlConnection = (HttpURLConnection) url
-                    .openConnection();
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.connect();
 
             InputStream in = urlConnection.getInputStream();
-
             InputStreamReader isw = new InputStreamReader(in);
 
 
@@ -82,26 +86,21 @@ public class LoginActivity extends AppCompatActivity {
                 e.printStackTrace(); //If you want further info on failure...
             }
         }
-
-        AlertDialog alertDialog = new AlertDialog.Builder(LoginActivity.this).create();
-        alertDialog.setTitle("Server Response");
         if(message != "")
         {
-            alertDialog.setMessage("Login OK");
-            userLS.setUserLoggedIn(true);
-            userLS.storeUserData(user);
             startActivity(new Intent(this, AlarmsActivity.class));
         }
-        else
+        else{
+            AlertDialog alertDialog = new AlertDialog.Builder(LoginActivity.this).create();
+            alertDialog.setTitle("Server Response");
             alertDialog.setMessage("Falha Login");
-        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-        alertDialog.show();
-
+            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                    new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {dialog.dismiss();
+                        }
+                    });
+            alertDialog.show();
+        }
     }
 
 }
