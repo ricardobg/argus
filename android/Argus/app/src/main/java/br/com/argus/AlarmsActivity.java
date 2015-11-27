@@ -40,9 +40,9 @@ public class AlarmsActivity extends BaseActivity {
                 HttpURLConnection urlConnection = null;
                 try {
                     if (isChecked) {
-                        url = new URL("https://argus-adrianodennanni.c9.io/alarm_switch?house_id=1&active=1");
+                        url = new URL("https://argus-adrianodennanni.c9.io/alarm_switch?house_id=3&active=1");
                     } else {
-                        url = new URL("https://argus-adrianodennanni.c9.io/alarm_switch?house_id=1&active=0");
+                        url = new URL("https://argus-adrianodennanni.c9.io/alarm_switch?house_id=3&active=0");
                     }
 
 

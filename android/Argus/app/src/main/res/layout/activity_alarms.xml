@@ -31,41 +31,13 @@
                 android:layout_height="match_parent"
                 android:layout_gravity="end|center_vertical"
                 android:checked="false"
-                android:text="Alarme 1"
+                android:text="Alarm"
                 android:textSize="30dp" />
         </FrameLayout>
 
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_weight="0.16">
 
-            <Switch
-                android:id="@+id/switch2"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="end|center_vertical"
-                android:checked="false"
-                android:text="Alarme 2"
-                android:textSize="30dp" />
-        </FrameLayout>
 
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_weight="0.16">
 
-            <Switch
-                android:id="@+id/switch3"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="end|center_vertical"
-                android:checked="false"
-                android:text="Alarme 3"
-                android:textSize="30dp" />
-        </FrameLayout>
 
     </LinearLayout>
 </RelativeLayout>

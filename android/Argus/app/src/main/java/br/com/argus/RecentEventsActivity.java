@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,6 +53,7 @@ public class RecentEventsActivity extends BaseActivity {
     private static final String TAG_ID = "id";
     private static final String TAG_TIMESTAMP = "timestamp";
     private static final String TAG_TYPE = "type";
+    private static final String TAG_SENSOR = "sensor";
     private static final String TAG_SNAP = "snap";
 
     User user;
@@ -81,7 +83,7 @@ public class RecentEventsActivity extends BaseActivity {
         try {
             response = getJSONObject("https://argus-adrianodennanni.c9.io/update_info");
             events = response.getJSONArray(TAG_EVENTS);
-            for(int i = 0; i < events.length(); i++){
+            for(int i = events.length()-1; i >=0 ; i--){
                 JSONObject c = events.getJSONObject(i);
 
                 // Storing  JSON item in a Variable
@@ -89,7 +91,49 @@ public class RecentEventsActivity extends BaseActivity {
 
                 Date time = new Date((long)(c.getInt(TAG_TIMESTAMP))* (long) 1000);
                 String timestamp = String.format("Time: %1$tT, %1$tm/%1$td/%1$tY", time);
+
                 String type = "Type: " + c.getString(TAG_TYPE);
+                if (Objects.equals(type, "Type: 1")){
+                    type = "Type: invasion";
+                }
+                if (Objects.equals(type, "Type: 2")){
+                    type = "Type: offline";
+                }
+                if (Objects.equals(type, "Type: 4")){
+                    type = "Type: panic identified";
+                }
+                if (Objects.equals(type, "Type: 8")){
+                    type = "Type: regular auth";
+                }
+                if (Objects.equals(type, "Type: 16")){
+
+                    try{
+                        JSONObject sensorObject = c.getJSONObject(TAG_SENSOR);
+                        type = sensorObject.getString("open");
+                        if (Objects.equals(type, "0")){
+                            type = "Type: door closed";
+                        }
+                        else{
+                            type = "Type: door opened";
+                        }
+                    }catch(JSONException e){
+                        type = "Type: door change";
+                    }
+
+                }
+                if (Objects.equals(type, "Type: 32")){
+                    type = "Type: alarm modified";
+                }
+                if (Objects.equals(type, "Type: 64")){
+                    type = "Type: snap";
+                }
+                if (Objects.equals(type, "Type: 128")){
+                    type = "Type: online";
+                }
+
+
+
+
                 String snap = "";
                 String snapfound = "";
                 try{
