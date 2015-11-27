@@ -43,6 +43,14 @@ function identified_user(req, callback) {
 		callback(Error('user not identified. Please login'));
 }
 
+function identified_user_unsafe(req, callback) {
+	if (req.query.house_id !== undefined)
+		callback();
+	else
+		callback(Error('Please inform house_id in the url'));
+}
+
+
 
 app.get('/', function (req, res) {
  // res.send('List of commands:');
@@ -356,6 +364,39 @@ app.get('/update_info', function (req, res) {
 				return;
 			}
 			crud.is_alarm_on(conn, req.cookies.house_id, function (err, active) {
+				if (err) {
+					res.status(500).send({"error": err.message});
+					disconnect(conn);
+					return;
+				}	
+				disconnect(conn);
+				res.json({ 
+					alarm_status: active,
+					events: events 
+				});		
+			});
+		});
+	});
+});
+
+app.get('/update_info_unsafe', function (req, res) {
+	console.log("[update_info_unsafe] Processing request");
+	var timestamp = req.query.timestamp; 
+	if (timestamp == undefined)
+		timestamp = -1;
+	identified_user_unsafe(req, function (err) {
+		if (err) {
+			res.status(500).send({"error": err.message});
+			return;
+		}
+		var conn = connect();
+		crud.get_events(conn, req.query.house_id, parseInt(timestamp)+1, req.protocol + '://' + req.get('host') + '/', function (err, events) {
+			if (err) {
+				res.status(500).send({"error": err.message});
+				disconnect(conn);
+				return;
+			}
+			crud.is_alarm_on(conn, req.query.house_id, function (err, active) {
 				if (err) {
 					res.status(500).send({"error": err.message});
 					disconnect(conn);
