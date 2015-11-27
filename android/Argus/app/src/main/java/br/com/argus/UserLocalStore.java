@@ -51,7 +51,7 @@ public class UserLocalStore {
         boolean loggedIn = userLocalDB.getBoolean("loggedIn", false);
         return loggedIn;
     }
-    public void storeUserSessionCookies(HttpURLConnection urlConnection){
+    /*public void storeUserSessionCookies(HttpURLConnection urlConnection){
         Map<String, List<String>> headerFields = urlConnection.getHeaderFields();
         Set<String> headerFieldsSet = headerFields.keySet();
         Set<String> cookiesSet = null;
@@ -73,5 +73,5 @@ public class UserLocalStore {
         Set<String> cookiesSet = userLocalDB.getStringSet("CookiesSet", null);
         List<String> cookiesList = new ArrayList<>(cookiesSet);
         return cookiesList;
-    }
+    }*/
 }

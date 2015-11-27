@@ -10,6 +10,10 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
+import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -21,15 +25,13 @@ import java.util.logging.Logger;
 public class RecentEventsActivity extends BaseActivity {
     User user;
     static UserLocalStore userLS;
-    static List<String> cookiesList;
-
+    MyApp mApp = MyApp.getInstance();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         userLS = new UserLocalStore(this);
         user = userLS.getLoggedInUser();
-        cookiesList = userLS.retrieveUserSessionCookies();
-
+        CookieHandler.setDefault(new CookieManager(mApp.getCookieStore(), CookiePolicy.ACCEPT_ALL));
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recent_events);
 
@@ -40,6 +42,7 @@ public class RecentEventsActivity extends BaseActivity {
 
         try {
             response = getJSONObject("https://argus-adrianodennanni.c9.io/update_info");
+            Log.d("Testando",response.toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -99,19 +102,12 @@ public class RecentEventsActivity extends BaseActivity {
 
         URL url = new URL(_url);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestProperty("Cookie", "user_id=3;house_id=3");
-        conn.connect();
         conn.setReadTimeout(10000 /* milliseconds */);
         conn.setConnectTimeout(15000 /* milliseconds */);
         conn.setDoInput(true);
         conn.setRequestProperty("User-Agent", "android");
         conn.setRequestProperty("Accept", "application/json");
         conn.addRequestProperty("Content-Type", "application/json");
-        for (String cookie : cookiesList) {
-            cookie = cookie.substring(0, cookie.indexOf(";"));
-            Log.d("Testando", cookie);
-        }
-
         BufferedReader in = new BufferedReader(
                 new InputStreamReader(conn.getInputStream()));
 
